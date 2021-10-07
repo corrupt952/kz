@@ -66,6 +66,8 @@ activate() {
   ln -f "$install_path/kustomize" "$bin_path/kustomize"
 }
 
+##
+# Commands
 command::use() {
   local -r version="$1"
   [[ -z "$version" ]] && abort "Required version"
