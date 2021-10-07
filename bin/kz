@@ -14,7 +14,6 @@ readonly KZ_CACHE_DIR="${KZ_PREFIX}/k/versions"
 ##
 # Logger
 logger::print() {
-  local level="$1"
   local -a messages=(
     "[$(date +'%Y-%m-%dT%H:%M:%S.%3N%z')]"
   )
