@@ -1,5 +1,16 @@
 #!/usr/bin/env bash
 
+set -eo pipefail
+
+[[ -n "$DEBUG" ]] && set -x
+
+##
+# Global variables
+KZ_PREFIX="${KZ_PREFIX-/usr/local}"
+KZ_PREFIX="${KZ_PREFIX%/}"
+readonly KZ_PREFIX
+readonly KZ_CACHE_DIR="${KZ_PREFIX}/k/versions"
+
 ##
 # Logger
 logger::print() {
@@ -17,13 +28,6 @@ logger::error() {
 logger::log() {
   logger::print "$*"
 }
-
-##
-# Global variables
-KZ_PREFIX="${KZ_PREFIX-/usr/local}"
-KZ_PREFIX="${KZ_PREFIX%/}"
-readonly KZ_PREFIX
-readonly KZ_CACHE_DIR="${KZ_PREFIX}/k/versions"
 
 abort() {
   logger::error "$*"
