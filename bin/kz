@@ -123,7 +123,7 @@ EOS
 ##
 # main
 main() {
-  local subcommand="$1"
+  local -r subcommand="$1"
 
   case "$subcommand" in
   i | install)
