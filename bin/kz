@@ -110,6 +110,16 @@ command::install() {
   activate "$version"
 }
 
+command::exec() {
+  local -r version="$1"
+  [[ -z "$version" ]] && abort "Required version"
+
+  local -r install_path="$KZ_CACHE_DIR/kustomize/$version"
+  [[ ! -e "$install_path" ]] && abort "Not installed version: $version"
+
+  exec "$install_path/kustomize" "${@:2}"
+}
+
 command::help() {
   cat <<-EOS
 Usage: kz [COMMAND] [args]
@@ -117,6 +127,7 @@ Usage: kz [COMMAND] [args]
 Commands:
   k install <version>
   k use <version>
+  k exec <version> <command>
 EOS
 }
 
@@ -128,17 +139,18 @@ main() {
   case "$subcommand" in
   i | install)
     command::install "${@:2}"
-    exit
     ;;
 
   u | use)
     command::use "${@:2}"
-    exit
+    ;;
+
+  e | exec)
+    command::exec "${@:2}"
     ;;
 
   help)
     command::help
-    exit
     ;;
 
   *)
