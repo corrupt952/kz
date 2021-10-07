@@ -1,0 +1,149 @@
+#!/usr/bin/env bash
+
+##
+# Logger
+logger::print() {
+  local level="$1"
+  local -a messages=(
+    "[$(date +'%Y-%m-%dT%H:%M:%S.%3N%z')]"
+  )
+  echo "${messages[*]// /|} ${*:1}"
+}
+logger::error() {
+  {
+    logger::print "$*"
+  } >&2
+}
+logger::log() {
+  logger::print "$*"
+}
+
+##
+# Global variables
+KZ_PREFIX="${KZ_PREFIX-/usr/local}"
+KZ_PREFIX="${KZ_PREFIX%/}"
+readonly KZ_PREFIX
+readonly KZ_CACHE_DIR="${KZ_PREFIX}/k/versions"
+
+abort() {
+  logger::error "$*"
+  exit 1
+}
+
+platform() {
+  local os="unexpected_os"
+  case "$(uname -a)" in
+  Linux*) os="linux" ;;
+  Darwin*) os="darwin" ;;
+  esac
+
+  local arch="unexpected_arch"
+  case "$(uname -m)" in
+  x86_64) arch=amd64 ;;
+  aarch64 | armv8l) arch=arm64 ;;
+  esac
+
+  [ -n "$KZ_ARCH" ] && arch="$KZ_ARCH"
+
+  echo "${os}_${arch}"
+}
+
+tarball_url() {
+  local -r version="$1"
+  echo "https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2F${version}/kustomize_${version}_$(platform).tar.gz"
+}
+
+all_versions() {
+  curl https://api.github.com/repos/kubernetes-sigs/kustomize/git/refs/tags
+}
+
+activate() {
+  local -r version="$1"
+  local -r install_path="$KZ_CACHE_DIR/kustomize/$version"
+  local -r bin_path="$KZ_PREFIX/bin"
+
+  mkdir -p "$bin_path"
+  ln -f "$install_path/kustomize" "$bin_path/kustomize"
+}
+
+command::use() {
+  local -r version="$1"
+  [[ -z "$version" ]] && abort "Required version"
+
+  local -r install_path="$KZ_CACHE_DIR/kustomize/$version"
+  [[ ! -e "$install_path" ]] && command::install "$1"
+
+  activate "$version"
+}
+
+command::install() {
+  local -r version="$1"
+  [[ -z "$version" ]] && abort "Required version"
+
+  local -r install_path="$KZ_CACHE_DIR/kustomize/$version"
+  local -r lockfile_path="$install_path/kz.lock"
+  if [[ -d "$install_path" ]]; then
+    if [[ ! -e "$lockfile_path" ]]; then
+      exit
+    fi
+  fi
+
+  logger::log "Installing $version"
+
+  local -r url="$(tarball_url "$version")"
+  logger::log "tarball $url"
+
+  mkdir -p "$install_path" || abort "sudo required (or change ownership, or define KZ_PREFIX)"
+  touch "$lockfile_path"
+
+  (
+    cd "$install_path" || abort "Failed to cd to $install_path"
+
+    curl -L -s "$url" | tar -zx --no-same-owner
+    if [[ "${PIPESTATUS[0]}" -ne 0 ]]; then
+      abort "failed to download archive for $version"
+    fi
+  )
+
+  rm -f "$lockfile_path"
+
+  activate "$version"
+}
+
+command::help() {
+  cat <<-EOS
+Usage: kz [COMMAND] [args]
+
+Commands:
+  k install <version>
+  k use <version>
+EOS
+}
+
+##
+# main
+main() {
+  local subcommand="$1"
+
+  case "$subcommand" in
+  i | install)
+    command::install "${@:2}"
+    exit
+    ;;
+
+  u | use)
+    command::use "${@:2}"
+    exit
+    ;;
+
+  help)
+    command::help
+    exit
+    ;;
+
+  *)
+    abort "Unkown subcommand: ${subcommand}"
+    ;;
+  esac
+}
+main "$@"
