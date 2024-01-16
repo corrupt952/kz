@@ -43,7 +43,7 @@ platform() {
   local arch="unexpected_arch"
   case "$(uname -m)" in
   x86_64) arch=amd64 ;;
-  aarch64 | armv8l) arch=arm64 ;;
+  arm64 | aarch64 | armv8l) arch=arm64 ;;
   esac
 
   [ -n "$KZ_ARCH" ] && arch="$KZ_ARCH"
