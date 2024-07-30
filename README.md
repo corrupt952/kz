@@ -1,5 +1,9 @@
 # kz
 
+> [!CAUTION]
+> This Repository is archived.
+> Alternative tool: https://github.com/aquaproj/aqua
+
 Kustomize version management
 
 ## Installation
